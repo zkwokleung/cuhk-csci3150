@@ -32,7 +32,7 @@ int main(){
     }
 
     char inBuf[40];
-    char outBuf[40];
+    char outBuf[5];
     int num;
     int sum = 0;
     if(read(fdIn, inBuf, 40) < 0)
@@ -47,7 +47,7 @@ int main(){
         // Convert to number
         sscanf(token, "%d", &num);
         // Sum up the numbers
-        sum += num;
+        sum = num + 1;
         // Convert back to char array
         sprintf(outBuf, "%d\n", sum);
         // Write to output.txt
@@ -56,7 +56,7 @@ int main(){
             printf("Error writing output.txt\n");
             exit(-1);
         }
-        // Reset
+        // next token
         token = strtok(NULL, "\n");
     }
 
