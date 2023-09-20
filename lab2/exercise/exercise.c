@@ -18,5 +18,50 @@ TIP: You can use sscanf to convert char array to int and sprintf to convert int 
 
 */
 int main(){
+    int fdIn;
+    int fdOut;
+    if ((fdIn = open("input.txt", O_RDONLY)) < 0)
+    {
+        printf("Error openning input.txt\n");
+        exit(-1);
+    }
+    if ((fdOut = open("output.txt", O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR)) < 0)
+    {
+        printf("Error openning output.txt\n");
+        exit(-1);
+    }
 
+    char inBuf[40];
+    char outBuf[40];
+    int num;
+    int sum = 0;
+    if(read(fdIn, inBuf, 40) < 0)
+    {
+        printf("Error reading input.txt\n");
+        exit(-1);
+    }
+
+    char *token = strtok(inBuf, "\n");
+    while(token != NULL)
+    {
+        // Convert to number
+        sscanf(token, "%d", &num);
+        // Sum up the numbers
+        sum += num;
+        // Convert back to char array
+        sprintf(outBuf, "%d\n", sum);
+        // Write to output.txt
+        if(write(fdOut, outBuf, strlen(outBuf)) < 0)
+        {
+            printf("Error writing output.txt\n");
+            exit(-1);
+        }
+        // Reset
+        token = strtok(NULL, "\n");
+    }
+
+    close(fdIn);
+    close(fdOut);
+    
+    return 0;
 }
