@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/zkwokleung/Repos/cuhk-csci3150/assign1",
+      "program": "/Users/zkwokleung/Repos/cuhk-csci3150/assign1/build/Debug/outDebug"
+    }
+  ]
+}
