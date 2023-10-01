@@ -10,7 +10,8 @@
 #include <errno.h>
 #include <unistd.h>
 
-#define MAX_PIPE_COUNT 10
+// You can adjust the maximum number of pipe here!
+#define MAX_PIPE_COUNT 100
 
 int shell_execute(char **args, int argc)
 {
