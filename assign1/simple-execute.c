@@ -54,9 +54,11 @@ int shell_execute(char **args, int argc)
     else if (child_pid == 0)
     {
         int child_pid = -1, wait_return = -1, status = -1;
+        int pipefd[2];
+        pipe(pipefd);
 
         // Create child processes and execute commands
-        for (i = 0; i < pipe_count; i++)
+        for (i = 0; i <= pipe_count; i++)
         {
             // Create pipe
             if (pipe(pipefds[i]) < 0)
@@ -94,8 +96,6 @@ int shell_execute(char **args, int argc)
             }
         }
 
-        printf("? Process %d is executing command %s \n", i, args[pipe_indecies[pipe_count - i]]);
-
         // Redirect stdin to get the ouput from the previous command (output of the child process)
         if (i < pipe_count)
         {
@@ -114,6 +114,13 @@ int shell_execute(char **args, int argc)
                 perror("Error in dup2(STDOUT_FILENO) \n");
                 exit(EXIT_FAILURE);
             }
+        }
+
+        // Close all pipes
+        for (int j = 0; j <= i; j++)
+        {
+            close(pipefds[j][0]);
+            close(pipefds[j][1]);
         }
 
         // Execute command
