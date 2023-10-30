@@ -35,7 +35,7 @@ do
     fi
     diff ./test/output.log ./test/expected.log > ./test/diff.log
 
-    if [ -s "diff.log" ]; then
+    if [ -s "./test/diff.log" ]; then
         printf "\033[31m!!! Error: Output mismatch while running testcase$i\033[0m\n"
         exit 1
     fi
