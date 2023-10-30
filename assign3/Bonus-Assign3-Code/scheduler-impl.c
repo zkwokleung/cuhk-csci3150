@@ -158,7 +158,7 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
             // If not, proceed to the next time
             time++;
 
-            // If the time reaches the period, move all the processes in the queue to the last queue (highest priority)
+            // If the time reaches the period, move all the processes in the queue to the last queue
             if (time % period == 0)
             {
                 // Create a temporary array to store the processes in the queue
@@ -168,7 +168,9 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                 {
                     while (!IsEmptyQueue(ProcessQueue[i]))
                     {
-                        temp[temp_index++] = DeQueue(ProcessQueue[i]);
+                        temp[temp_index] = DeQueue(ProcessQueue[i]);
+                        temp[temp_index].service_time = 0;
+                        temp_index++;
                     }
                 }
 
@@ -179,9 +181,11 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                 for (int i = 0; i < temp_index; i++)
                 {
                     ProcessQueue[queue_num - 1] = EnQueue(ProcessQueue[queue_num - 1], temp[i]);
-                    debug_log("Process %d was downgraded to queue %d at time %d\n", temp[i].process_id, queue_num - 1,
+                    debug_log("Process %d was boosted to queue %d at time %d\n", temp[i].process_id, queue_num - 1,
                               time);
                 }
+
+                queue_index = -1;
 
                 // Free the temporary array
                 free(temp);
