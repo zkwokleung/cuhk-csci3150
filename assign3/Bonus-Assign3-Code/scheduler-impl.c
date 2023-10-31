@@ -55,28 +55,6 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
 
     while (proc_remain)
     {
-        // check if any process arrives
-        for (int i = 0; i < proc_num; i++)
-        {
-            if (proc[i].arrival_time == time)
-            {
-                // Initialize the process's uninitialized variables
-                proc[i].waiting_time = 0;
-                proc[i].turnaround_time = 0;
-                proc[i].completion_time = 0;
-                proc[i].service_time = 0;
-
-                // enqueue to the last queue
-                ProcessQueue[queue_num - 1] = EnQueue(ProcessQueue[queue_num - 1], proc[i]);
-                debug_log("?? Process %d entered the queue %d for the first time at time %d\n", proc[i].process_id,
-                          queue_num - 1, time);
-            }
-            else
-            {
-                proc[i].waiting_time++;
-            }
-        }
-
         // Check whether there is any process in the queue according to the priority
         if (queue_index == -1)
         {
@@ -85,6 +63,7 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                 if (!IsEmptyQueue(ProcessQueue[i]))
                 {
                     queue_index = i;
+                    debug_log("[Time: %d] Queue %d is not empty\n", time, queue_index);
                     break;
                 }
             }
@@ -101,6 +80,9 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                 proc.execution_time -= slice_time;
                 proc.service_time += slice_time;
 
+                debug_log("[Time: %d] Process %d has been running in queue %d for %d. Remaining time: %d\n", time,
+                          proc.process_id, queue_index, slice_time, proc.execution_time);
+
                 // Check if the process is finished
                 if (proc.execution_time <= 0)
                 {
@@ -111,37 +93,34 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                     proc_remain--;
 
                     outprint(time - slice_time, time, proc.process_id, proc.arrival_time, proc.execution_time);
-                    debug_log(">> Process %d finished at time %d\n", proc.process_id, time);
-
-                    // Reset the slice time
-                    slice_time = 0;
+                    debug_log("[Time: %d] >> Process %d finished\n", time, proc.process_id);
 
                     slice_flag = 1;
                 }
                 else if (slice_time == ProcessQueue[queue_index]->time_slice)
                 {
+                    // ! Rule 4: Allotment Time
                     DeQueue(ProcessQueue[queue_index]);
 
                     // Check whether the process has been running in the same queue for a period
                     if (queue_index > 0 && proc.service_time >= ProcessQueue[queue_index]->allotment_time)
                     {
+                        debug_log("[Time: %d] Process %d has been running in the same queue %d for %d.\n", time,
+                                  proc.process_id, queue_index, proc.service_time);
                         // If yes, move the process to the next queue if it is not the last queue
                         proc.service_time = 0;
-                        ProcessQueue[queue_index + 1] = EnQueue(ProcessQueue[queue_index - 1], proc);
-                        debug_log("Process %d was downgraded to queue %d at time %d\n", proc.process_id,
-                                  queue_index - 1, time);
+                        ProcessQueue[queue_index - 1] = EnQueue(ProcessQueue[queue_index - 1], proc);
+                        debug_log("[Time: %d] Process %d was downgraded to queue %d\n", time, proc.process_id,
+                                  queue_index - 1);
                     }
                     else
                     {
                         // If no, enqueue the process back to the same queue
                         ProcessQueue[queue_index] = EnQueue(ProcessQueue[queue_index], proc);
-                        debug_log("Enqueue process %d to queue %d at time %d\n", proc.process_id, queue_index, time);
+                        debug_log("[Time: %d] Enqueue process %d to queue %d\n", time, proc.process_id, queue_index);
                     }
 
                     outprint(time - slice_time, time, proc.process_id, proc.arrival_time, proc.execution_time);
-
-                    // Reset the slice time
-                    slice_time = 0;
 
                     slice_flag = 1;
                 }
@@ -150,54 +129,101 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                     slice_time++;
                 }
             }
+            else
+            {
+                queue_index = -1;
+            }
         }
 
         // Check whether there is a slice happened
-        if (slice_flag == 0)
+        if (slice_flag == 1)
+        {
+            // If yes, reset the queue index so that the scheduler will check the queue again
+            queue_index = -1;
+            slice_time = 0;
+        }
+        else
         {
             // If not, proceed to the next time
             time++;
+        }
 
-            // If the time reaches the period, move all the processes in the queue to the last queue
-            if (time % period == 0)
+        slice_flag = 0;
+
+        // ! Rule 3: Process Arrival
+        // check if any process arrives
+        for (int i = 0; i < proc_num; i++)
+        {
+            if (proc[i].arrival_time == time)
             {
-                // Create a temporary array to store the processes in the queue
-                Process *temp = (Process *)malloc(sizeof(Process) * proc_num);
-                int temp_index = 0;
-                for (int i = 0; i < queue_num - 1; i++)
-                {
-                    while (!IsEmptyQueue(ProcessQueue[i]))
-                    {
-                        temp[temp_index] = DeQueue(ProcessQueue[i]);
-                        temp[temp_index].service_time = 0;
-                        temp_index++;
-                    }
-                }
+                // Initialize the process's uninitialized variables
+                proc[i].waiting_time = 0;
+                proc[i].turnaround_time = 0;
+                proc[i].completion_time = 0;
+                proc[i].service_time = 0;
 
-                // Sort the temporary array by process id
+                // enqueue to the last queue
+                ProcessQueue[queue_num - 1] = EnQueue(ProcessQueue[queue_num - 1], proc[i]);
+                debug_log("[Time: %d] ?? Process %d entered the queue %d for the first time\n", time,
+                          proc[i].process_id, queue_num - 1);
+                proc[i].arrival_time = -1;
+            }
+            else
+            {
+                proc[i].waiting_time++;
+            }
+        }
+
+        // ! Rule 5: Priority Boost
+        // If the time reaches the period, move all the processes in the queue to the last queue
+        if (time > 0 && time % period == 0)
+        {
+            // Create a temporary array to store the processes in the queue
+            Process *temp = (Process *)malloc(sizeof(Process) * proc_num);
+            int temp_index = 0;
+
+            // * Before that, output the current queue status
+            if (queue_index != -1)
+            {
+                Process proc = DeQueue(ProcessQueue[queue_index]);
+                proc.execution_time -= slice_time;
+
+                outprint(time - slice_time, time, proc.process_id, proc.arrival_time, proc.execution_time);
+
+                temp[temp_index++] = proc;
+            }
+
+            for (int i = 0; i < queue_num; i++)
+            {
+                while (!IsEmptyQueue(ProcessQueue[i]))
+                {
+                    temp[temp_index] = DeQueue(ProcessQueue[i]);
+                    temp_index++;
+                }
+            }
+
+            // Sort the temporary array by process id
+            if (temp_index > 0)
+            {
                 sort_process_by_id(temp, temp_index, 1);
 
                 // Enqueue the processes in the temporary array to the last queue
                 for (int i = 0; i < temp_index; i++)
                 {
+                    temp[i].service_time = 0;
                     ProcessQueue[queue_num - 1] = EnQueue(ProcessQueue[queue_num - 1], temp[i]);
-                    debug_log("Process %d was boosted to queue %d at time %d\n", temp[i].process_id, queue_num - 1,
-                              time);
+                    debug_log("[Time: %d] Process %d was boosted to queue %d\n", time, temp[i].process_id,
+                              queue_num - 1);
+                    QueuePrint(ProcessQueue[queue_num - 1]);
                 }
-
-                queue_index = -1;
-
-                // Free the temporary array
-                free(temp);
             }
-        }
-        else
-        {
-            // If yes, reset the queue index so that the scheduler will check the queue again
-            queue_index = -1;
-        }
 
-        slice_flag = 0;
+            slice_time = 0;
+            queue_index = -1;
+
+            // Free the temporary array
+            free(temp);
+        }
     }
 }
 
