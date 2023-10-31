@@ -37,6 +37,7 @@ do
 
     if [ -s "./test/diff.log" ]; then
         printf "\033[31m!!! Error: Output mismatch while running testcase$i\033[0m\n"
+        printf "\033[31m!!!        Please check test/diff.log for more info\033[0m\n"
         exit 1
     fi
 
