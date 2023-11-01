@@ -20,7 +20,7 @@ do
 
     pid=$!
 
-    sleep 1
+    sleep 0.5
 
     if ps -p $pid > /dev/null
     then
