@@ -3,8 +3,8 @@ mkdir test
 
 cd Bonus-Assign3-Code
 make
-cp Scheduler ../test
-cp *.o ../test
+mv Scheduler ../test
+mv *.o ../test
 cd ..
 
 for i in {1..5}
