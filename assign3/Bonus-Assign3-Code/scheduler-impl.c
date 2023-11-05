@@ -55,101 +55,6 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
 
     while (proc_remain)
     {
-        // Check whether there is any process in the queue according to the priority
-        if (queue_index == -1)
-        {
-            for (int i = queue_num - 1; i >= 0; i--)
-            {
-                if (!IsEmptyQueue(ProcessQueue[i]))
-                {
-                    queue_index = i;
-                    debug_log("[Time: %d] Queue %d is not empty\n", time, queue_index);
-                    break;
-                }
-            }
-        }
-
-        // If there is a process in the queue, execute it
-        if (queue_index != -1)
-        {
-            if (!IsEmptyQueue(ProcessQueue[queue_index]))
-            {
-                Process proc = FrontQueue(ProcessQueue[queue_index]);
-
-                // Execute the process
-                proc.execution_time -= slice_time;
-                proc.service_time += slice_time;
-
-                debug_log("[Time: %d] Process %d has been running in queue %d for %d. Remaining time: %d\n", time,
-                          proc.process_id, queue_index, slice_time, proc.execution_time);
-
-                // Check if the process is finished
-                if (proc.execution_time <= 0)
-                {
-                    DeQueue(ProcessQueue[queue_index]);
-
-                    proc.completion_time = time;
-                    proc.turnaround_time = proc.completion_time - proc.arrival_time;
-                    proc_remain--;
-
-                    outprint(time - slice_time, time, proc.process_id, proc.arrival_time, proc.execution_time);
-                    debug_log("[Time: %d] >> Process %d finished\n", time, proc.process_id);
-
-                    slice_flag = 1;
-                }
-                else if (slice_time == ProcessQueue[queue_index]->time_slice)
-                {
-                    // ! Rule 4: Allotment Time
-                    DeQueue(ProcessQueue[queue_index]);
-
-                    // Check whether the process has been running in the same queue for a period
-                    if (queue_index > 0 && proc.service_time >= ProcessQueue[queue_index]->allotment_time)
-                    {
-                        debug_log("[Time: %d] Process %d has been running in the same queue %d for %d.\n", time,
-                                  proc.process_id, queue_index, proc.service_time);
-                        // If yes, move the process to the next queue if it is not the last queue
-                        proc.service_time = 0;
-                        ProcessQueue[queue_index - 1] = EnQueue(ProcessQueue[queue_index - 1], proc);
-                        debug_log("[Time: %d] Process %d was downgraded to queue %d\n", time, proc.process_id,
-                                  queue_index - 1);
-                    }
-                    else
-                    {
-                        // If no, enqueue the process back to the same queue
-                        ProcessQueue[queue_index] = EnQueue(ProcessQueue[queue_index], proc);
-                        debug_log("[Time: %d] Enqueue process %d to queue %d\n", time, proc.process_id, queue_index);
-                    }
-
-                    outprint(time - slice_time, time, proc.process_id, proc.arrival_time, proc.execution_time);
-
-                    slice_flag = 1;
-                }
-                else
-                {
-                    slice_time++;
-                }
-            }
-            else
-            {
-                queue_index = -1;
-            }
-        }
-
-        // Check whether there is a slice happened
-        if (slice_flag == 1)
-        {
-            // If yes, reset the queue index so that the scheduler will check the queue again
-            queue_index = -1;
-            slice_time = 0;
-        }
-        else
-        {
-            // If not, proceed to the next time
-            time++;
-        }
-
-        slice_flag = 0;
-
         // ! Rule 3: Process Arrival
         // check if any process arrives
         for (int i = 0; i < proc_num; i++)
@@ -210,7 +115,7 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
                 // Enqueue the processes in the temporary array to the last queue
                 for (int i = 0; i < temp_index; i++)
                 {
-                    temp[i].service_time = 0;
+                    temp[i].service_time = 1;
                     ProcessQueue[queue_num - 1] = EnQueue(ProcessQueue[queue_num - 1], temp[i]);
                     debug_log("[Time: %d] Process %d was boosted to queue %d\n", time, temp[i].process_id,
                               queue_num - 1);
@@ -224,6 +129,102 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
             // Free the temporary array
             free(temp);
         }
+
+        // Check whether there is any process in the queue according to the priority
+        if (queue_index == -1)
+        {
+            for (int i = queue_num - 1; i >= 0; i--)
+            {
+                if (!IsEmptyQueue(ProcessQueue[i]))
+                {
+                    queue_index = i;
+                    debug_log("[Time: %d] Queue %d is not empty\n", time, queue_index);
+                    break;
+                }
+            }
+        }
+
+        // If there is a process in the queue, execute it
+        if (queue_index != -1)
+        {
+            if (!IsEmptyQueue(ProcessQueue[queue_index]))
+            {
+                Process proc = FrontQueue(ProcessQueue[queue_index]);
+
+                // Execute the process
+                proc.execution_time -= slice_time + 1;
+                proc.service_time += slice_time;
+
+                debug_log("[Time: %d] Process %d has been running in queue %d for %d. Remaining time: %d\n", time,
+                          proc.process_id, queue_index, slice_time, proc.execution_time);
+
+                // Check if the process is finished
+                if (proc.execution_time <= 0)
+                {
+                    DeQueue(ProcessQueue[queue_index]);
+
+                    proc.completion_time = time;
+                    proc.turnaround_time = proc.completion_time - proc.arrival_time;
+                    proc_remain--;
+
+                    outprint(time - slice_time, time + 1, proc.process_id, proc.arrival_time, proc.execution_time);
+                    debug_log("[Time: %d] >> Process %d finished\n", time, proc.process_id);
+
+                    slice_flag = 1;
+                }
+                else if (slice_time == ProcessQueue[queue_index]->time_slice - 1)
+                {
+                    // ! Rule 4: Allotment Time
+                    DeQueue(ProcessQueue[queue_index]);
+
+                    debug_log("[Time: %d] Process %d has been running in the same queue %d for %d.\n", time,
+                              proc.process_id, queue_index, proc.service_time);
+                    // Check whether the process has been running in the same queue for a period
+                    if (queue_index > 0 && proc.service_time >= ProcessQueue[queue_index]->allotment_time - 1)
+                    {
+                        // If yes, move the process to the next queue if it is not the last queue
+                        proc.service_time = 1;
+                        ProcessQueue[queue_index - 1] = EnQueue(ProcessQueue[queue_index - 1], proc);
+                        debug_log("[Time: %d] Process %d was downgraded to queue %d\n", time, proc.process_id,
+                                  queue_index - 1);
+                    }
+                    else
+                    {
+                        // If no, enqueue the process back to the same queue
+                        proc.service_time++;
+                        ProcessQueue[queue_index] = EnQueue(ProcessQueue[queue_index], proc);
+                        debug_log("[Time: %d] Enqueue process %d to queue %d\n", time, proc.process_id, queue_index);
+                    }
+
+                    outprint(time - slice_time, time + 1, proc.process_id, proc.arrival_time, proc.execution_time);
+
+                    slice_flag = 1;
+                }
+                else
+                {
+                    slice_time++;
+                }
+            }
+            else
+            {
+                queue_index = -1;
+            }
+        }
+
+        // Check whether there is a slice happened
+        if (slice_flag == 1)
+        {
+            // If yes, reset the queue index so that the scheduler will check the queue again
+            queue_index = -1;
+            slice_time = 0;
+        }
+        else
+        {
+            // If not, proceed to the next time
+        }
+
+        time++;
+        slice_flag = 0;
     }
 }
 
