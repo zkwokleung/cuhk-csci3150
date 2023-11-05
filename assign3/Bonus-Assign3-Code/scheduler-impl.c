@@ -12,7 +12,7 @@
 #define DEBUG_LEVEL_ERROR 2
 
 // * Change the log level here
-#define DEBUG_LEVEL DEBUG_LEVEL_ALL
+#define DEBUG_LEVEL DEBUG_LEVEL_NONE
 
 #define debug_log(...)                                                                                                 \
     if (DEBUG_LEVEL <= DEBUG_LEVEL_LOG)                                                                                \
@@ -51,7 +51,7 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
     int queue_index = -1;
 
     // Sort the queue by process id
-    sort_process_by_id(proc, proc_num, 1);
+    sort_process_by_id(proc, proc_num, 0);
 
     while (proc_remain)
     {
@@ -110,7 +110,7 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
             // Sort the temporary array by process id
             if (temp_index > 0)
             {
-                sort_process_by_id(temp, temp_index, 1);
+                sort_process_by_id(temp, temp_index, 0);
 
                 // Enqueue the processes in the temporary array to the last queue
                 for (int i = 0; i < temp_index; i++)
@@ -218,28 +218,55 @@ void scheduler(Process *proc, LinkedQueue **ProcessQueue, int proc_num, int queu
             queue_index = -1;
             slice_time = 0;
         }
-        else
-        {
-            // If not, proceed to the next time
-        }
 
         time++;
         slice_flag = 0;
     }
 }
 
-void sort_process_by_id(Process *p, int num, int accending)
+void sort_process_by_id(Process *p, int num, int decending)
 {
-    for (int i = 0; i < num; i++)
+    Process *a = p;
+    Process *b = (Process *)malloc(num * sizeof(Process));
+    int seg, start;
+    for (seg = 1; seg < num; seg += seg)
     {
-        for (int j = i + 1; j < num; j++)
+        for (start = 0; start < num; start += seg + seg)
         {
-            if ((accending && p[i].process_id > p[j].process_id) || (!accending && p[i].process_id < p[j].process_id))
+            int low = start, mid = (start + seg < num ? start + seg : num),
+                high = (start + seg + seg < num ? start + seg + seg : num);
+            int k = low;
+            int start1 = low, end1 = mid;
+            int start2 = mid, end2 = high;
+            while (start1 < end1 && start2 < end2)
             {
-                Process temp = p[i];
-                p[i] = p[j];
-                p[j] = temp;
+                Process minproc;
+
+                if (decending == 0)
+                    minproc = a[start1].process_id < a[start2].process_id ? a[start1] : a[start2];
+                else
+                    minproc = a[start1].process_id > a[start2].process_id ? a[start1] : a[start2];
+
+                if (minproc.process_id == a[start1].process_id)
+                    b[k++] = a[start1++];
+                else
+                    b[k++] = a[start2++];
             }
+            while (start1 < end1)
+                b[k++] = a[start1++];
+            while (start2 < end2)
+                b[k++] = a[start2++];
         }
+        Process *tmp = a;
+        a = b;
+        b = tmp;
     }
+    if (a != p)
+    {
+        int i;
+        for (i = 0; i < num; i++)
+            b[i] = a[i];
+        b = a;
+    }
+    free(b);
 }
