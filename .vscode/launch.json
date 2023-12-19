@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/zkwokleung/Projects/cuhk-csci3150/assign4",
-      "program": "/Users/zkwokleung/Projects/cuhk-csci3150/assign4/build/Debug/outDebug"
+      "cwd": "/Users/zkwokleung/Projects/cuhk-csci3150/exams",
+      "program": "/Users/zkwokleung/Projects/cuhk-csci3150/exams/build/Debug/outDebug"
     }
   ]
 }
